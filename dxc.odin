@@ -47,6 +47,31 @@ IDxcBlobEncoding_Vtbl :: struct {
 
 IDxcBlobEncoding :: distinct IUnknown_Poly(IDxcBlobEncoding_Vtbl);
 
+DxcDefine :: struct{
+    name: win32.Wstring,
+    value: win32.Wstring,
+}
+
+IDxcCompilerArgs_Vtbl :: struct {
+    using _ : IUnknown_Vtbl,
+
+    GetArguments : proc "c" (this: rawptr) -> ^win32.Wstring,
+    GetCount : proc "c" (this: rawptr) -> u32,
+
+    AddArguments : rawptr,
+    AddArgumentsUTF8 : rawptr,
+    AddDefines : rawptr,
+}
+
+IDxcCompilerArgs :: distinct IUnknown_Poly(IDxcCompilerArgs_Vtbl);
+
+IDxcIncludeHandler_Vtbl :: struct {
+    using _ : IUnknown_Vtbl,
+    LoadSource : rawptr,
+}
+
+IDxcIncludeHandler :: distinct IUnknown_Poly(IDxcIncludeHandler_Vtbl);
+
 IDxcUtils_Vtbl :: struct {
     using _ : IUnknown_Vtbl,
 
@@ -56,12 +81,22 @@ IDxcUtils_Vtbl :: struct {
     CreateBlob : rawptr,
     LoadFile : rawptr,
     CreateReadOnlyStreamFromBlob : rawptr,
-    CreateDefaultIncludeHandle : rawptr,
+    CreateDefaultIncludeHandler : proc "c" (this: rawptr, ppResult: ^^IDxcIncludeHandler) -> HRESULT,
     GetBlobAsUtf8 : rawptr,
     GetBlobAsUtf16 : rawptr,
     GetDxilContainerPart : rawptr,
     CreateReflection : rawptr, 
-    BuildArguments : rawptr, 
+    BuildArguments : proc "c" (
+        this:           rawptr,
+        pSourceName:    win32.Wstring,
+        pEntryPoint:    win32.Wstring,
+        pTargetProfile: win32.Wstring,
+        pArguments:     ^win32.Wstring,
+        argCount:       u32,
+        pDefines:       ^DxcDefine,
+        defineCount:    u32,
+        ppArgs: ^^IDxcCompilerArgs
+    ) -> HRESULT,
     GetPDBContents : rawptr,
 }
 
@@ -90,7 +125,7 @@ DxcBuffer :: struct {
 
 IDxcCompiler3_Vtbl :: struct {
     using _ : IUnknown_Vtbl,
-    Compile : proc "c" (this: rawptr, pSource: ^DxcBuffer, pArguments: ^win32.Wstring, argCount: u32, pIncludeHandler: rawptr /* TODO */, riid: ^GUID, ppResult: ^rawptr) -> HRESULT,
+    Compile : proc "c" (this: rawptr, pSource: ^DxcBuffer, pArguments: ^win32.Wstring, argCount: u32, pIncludeHandler: ^IDxcIncludeHandler, riid: ^GUID, ppResult: ^rawptr) -> HRESULT,
     Disassemble : rawptr,
 }
 
